@@ -1,0 +1,259 @@
+{{#partial "header"}}
+    <title>Main Page</title>
+{{/partial}}
+
+<!--body-->
+{{#partial "contents"}}
+    <h1>이곳은 게시판입니다.</h1>
+    {{#if accountId}}
+    <div class="row mb-3">
+        <div class="col">로그인한 계정 : {{accountId}}</div>
+        <div class="col-8">
+            <button onclick='location.href="logout"' class='btn btn-secondary btn-sm'>로그아웃</button>
+        </div>
+    </div>
+    {{/if}}
+    <div id="tableSpace"></div>
+    <div id="pageMarkerSpace"></div>
+    <div id="writeModalSpace"></div>
+    <div class="row" style="width: 50% !important;">
+        {{#if accountId}}
+            <div class="col">
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#boardModal">글쓰기</button>
+            </div>
+        {{/if}}
+        <div class="col-8">
+            <div class="row">
+                <select class="selectpicker" id="searchType">
+                    <option value="all">제목+내용</option>
+                    <option value="contents">내용</option>
+                    <option value="title">제목</option>
+                    <option value="writer">글쓴이</option>
+                </select>
+                <div class="col"><input type="text" class="form-control" id="search"></div>
+                <button type="button" class="btn btn-success" id="searchBtn">검색</button>
+            </div>
+        </div>
+    </div>
+{{/partial}}
+<!--body-->
+
+<!--js-->
+{{#partial "js"}}
+    {{> template/table}}
+    {{> template/pageMarker}}
+    {{> template/modal}}
+    <script>
+        let nowBoardList = new Object();
+        let nowBoardIndex = 0;
+        let accountId = '{{accountId}}';
+        let accountRole = '{{accountRole}}';
+        let keywordForSearch = "";
+        let typeForSearch = "";
+        const adminRole = ['ADMIN'];
+        const WRITE = "Write";
+        const MODIFY = "Modify";
+
+        window.onload = () => {
+            getAllData(attachBoard);
+            attachWriteModal();
+        }
+
+        var attachWriteModal = () => {
+            var template = Handlebars.compile($("#writeModal").html());
+            $("#writeModalSpace").html(template(accountId));
+        }
+
+        var getAllData = (callback = null, page = 1) => {
+            const SIZE = 10;
+            $.ajax({
+                method: 'GET',
+                url: 'api/boards?page=' + page + "&size=" + SIZE
+            }).done(function (response) {
+                nowBoardList = response.contents;
+                if (typeof callback != 'undefined') {
+                    callback(response);
+                }
+            })
+        }
+
+        var attachBoard = (response) => {
+            if (typeof response != 'undefined') {
+                var template = Handlebars.compile($("#tableList").html());
+                $("#tableSpace").html(template(response));
+                var template = Handlebars.compile($("#pageMarker").html());
+                $("#pageMarkerSpace").html(template(response));
+            }
+        }
+
+        var pageConvert = (page) => {
+            if(keywordForSearch != ""){
+                search(keywordForSearch, typeForSearch, attachBoard, page);
+            }else {
+                getAllData(attachBoard, page);
+            }
+        }
+
+        var fetchDetails = (index) => {
+            nowBoardIndex = index;
+            setModalData(index);
+            setModifyModal();
+            $('#boardModal').modal("show");
+        }
+
+        var setModalData = (index) => {
+            var $modal = $('#boardModal');
+            $modal.find('#user').val(nowBoardList[index].writer.accountId);
+            $modal.find('#title').val(nowBoardList[index].title);
+            $modal.find('#contents').val(nowBoardList[index].contents);
+        }
+
+        var setModifyModal = () => {
+            var $modal = $('#boardModal');
+            $modal.find('#saveBtn').text(MODIFY);
+            if ($modal.find('#user').val() === accountId || adminRole.includes(accountRole)) {
+                $modal.find('#deleteBtn').css('display', 'block');
+            } else {
+                setDisableContents($modal);
+            }
+        }
+
+        var setDisableContents = ($modal) => {
+            $modal.find('#title').attr('disabled', true);
+            $modal.find('#contents').attr('disabled', true);
+            $modal.find('#saveBtn').css('display', 'none');
+        }
+
+        var setAbleContents = ($modal) => {
+            $modal.find('#title').attr('disabled', false);
+            $modal.find('#contents').attr('disabled', false);
+            $modal.find('#saveBtn').css('display', 'block');
+        }
+
+        var resetModalData = () => {
+            var $modal = $('#boardModal');
+            $modal.find('#user').val(accountId);
+            $modal.find('#title').val("");
+            $modal.find('#contents').val("");
+        }
+
+        var setNewWriteModal = () => {
+            var $modal = $('#boardModal');
+            $modal.find('#saveBtn').text(WRITE);
+            $modal.find('#deleteBtn').css('display', 'none');
+            setAbleContents($modal);
+        }
+
+        var setBoardForm = () => {
+            var boardForm = new Object();
+            var $modal = $('#boardModal');
+            boardForm.title = $modal.find('#title').val();
+            boardForm.contents = $modal.find('#contents').val();
+            return boardForm;
+        }
+
+        var requiredInputHaveNullSpec = (boardForm) => {
+            var spec = false;
+            $.each(boardForm, function (attribute, value) {
+                if (value == null || value.trim() == "") {
+                    spec = true;
+                    return false;
+                }
+            })
+            return spec;
+        }
+
+        $(document).on('click', '#searchBtn', function () {
+            var keyword = $("#search").val();
+            var type = $("#searchType option:selected").val().toUpperCase();
+
+            if(keyword.trim() == ""){
+                keywordForSearch = "";
+                getAllData(attachBoard, 0);
+            }
+
+            keywordForSearch = keyword;
+            typeForSearch = type;
+            search(keyword, type, attachBoard);
+        })
+
+        var search = (keyword, type, callback = null, page = 1) => {
+            const SIZE = 10;
+
+            $.ajax({
+                method: 'GET',
+                url: 'api/boards?page=' + page + "&size=" + SIZE + "&keyword=" + keyword + "&type=" + type
+            }).done(function (response) {
+                nowBoardList = response.contents;
+                if (typeof callback != 'undefined') {
+                    callback(response);
+                }
+            })
+        }
+
+
+        $(document).on('show.bs.modal', '#boardModal', function (event) { // 모달 열릴 때 이벤트
+
+        })
+
+        $(document).on('hidden.bs.modal', '#boardModal', function () { // 모달 닫힐 때 이벤트
+            resetModalData();
+            setNewWriteModal();
+        })
+
+        $(document).on('click', '#deleteBtn', function () {
+            var password = $('#boardModal').find('#password').val();
+            $.ajax({
+                method: 'DELETE',
+                url: 'api/boards/' + nowBoardList[nowBoardIndex].id
+            }).done(function (response) {
+                if (typeof response == 'undefined') {
+                    if (typeof response.code == 'undefined') {
+                        alert(response.message);
+                    } else {
+                        $('#boardModal').modal("hide"); //닫기
+                    }
+                }
+            })
+        })
+
+        $(document).on('click', '#saveBtn', function () {
+            $('#requiredBtn').click();
+            var boardForm = setBoardForm();
+            if (requiredInputHaveNullSpec(boardForm) == true) {
+                return false;
+            }
+            var method, url;
+            if ($('#saveBtn').text() === WRITE) {
+                method = 'POST';
+                url = 'api/boards';
+            } else {
+                method = 'PUT';
+                url = 'api/boards/' + nowBoardList[nowBoardIndex].id;
+            }
+
+            $.ajax({
+                method: method,
+                url: url,
+                contentType: 'application/json',
+                data: JSON.stringify(boardForm)
+            }).done(function (response) {
+                if (typeof response != 'undefined') {
+                    if (typeof response.code != 'undefined') {
+                        alert(response.message);
+                    } else {
+                        $('#boardModal').modal("hide"); //닫기
+                    }
+                }
+            })
+        })
+
+    </script>
+    {{#block "helper"}}{{/block}}
+{{/partial}}
+<!--js-->
+{{> static/helper/helper}}
+{{> layout/layout}}
+
+
+
