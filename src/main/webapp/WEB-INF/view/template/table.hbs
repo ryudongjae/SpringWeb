@@ -1,0 +1,20 @@
+<script id="tableList" type="text/x-handlebars-template">
+    <table class="table table-striped" style="width: 50% !important;">
+        <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">제목</th>
+            <th scope="col">글쓴이</th>
+        </tr>
+        </thead>
+        <tbody>
+        \{{#contents}}
+        <tr onclick='fetchDetails(\{{@index}})'>
+            <th scope="row">\{{math @index '+' 1}}</th>
+            <td>\{{title}}</td>
+            <td>\{{writer.accountId}}</td>
+        </tr>
+       \{{/contents}}
+        </tbody>
+    </table>
+</script>
