@@ -1,6 +1,6 @@
 package ryudongjae.freeboard.controller;
 
-import com.freeboard01.api.user.UserForm;
+
 
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -8,6 +8,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import ryudongjae.freeboard.api.user.UserForm;
 import ryudongjae.freeboard.domain.user.UserService;
 
 import javax.servlet.http.HttpSession;

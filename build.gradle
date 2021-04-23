@@ -36,7 +36,7 @@ dependencies {
 	compile group: 'com.github.jknack', name: 'handlebars-springmvc', version: '4.0.6'
 	compile group: 'org.springframework.data', name: 'spring-data-jpa', version: '2.2.6.RELEASE'
 	compile group: 'org.hibernate', name: 'hibernate-entitymanager', version: '5.4.10.Final'
-	compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.15'
+	compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.21'
 	compile group: 'org.projectlombok', name: 'lombok', version: '1.18.12'
 	testCompileOnly("org.projectlombok:lombok:1.18.12")
 	annotationProcessor("org.projectlombok:lombok:1.18.12")
